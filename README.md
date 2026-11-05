@@ -1,4 +1,4 @@
-# YAOF
+# op-ib
 
 基于 **OpenWrt / ImmortalWrt / iStoreOS** 官方 ImageBuilder 组装的 x86-64 与 NanoPi 固件仓库。
 

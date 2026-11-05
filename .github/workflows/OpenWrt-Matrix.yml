@@ -174,7 +174,7 @@ jobs:
         with:
           name: ${{ matrix.upstream }}-${{ needs.setup.outputs.version }}
           body: |
-            ## YAOF ${{ matrix.upstream }} ${{ needs.setup.outputs.version }}
+            ## op-ib ${{ matrix.upstream }} ${{ needs.setup.outputs.version }}
 
             基于 ${{ matrix.upstream }} 官方 ImageBuilder 构建的 ${{ matrix.name }} 固件。
 
@@ -191,7 +191,7 @@ jobs:
             - 资产文件名包含构建日期；同一 tag 仅保留最近 3 次构建。
             - FlowCone 提供 UDP Full-Cone NAT。
             - ImmortalWrt 额外启用 firewall4 fullcone（TCP/非 UDP）。
-            - 问题反馈：https://github.com/xujw-org/YAOF/issues
+            - 问题反馈：https://github.com/xujw-org/op-ib/issues
           tag: ${{ matrix.upstream }}-${{ needs.setup.outputs.version }}
           commit: ${{ github.sha }}
           allowUpdates: true

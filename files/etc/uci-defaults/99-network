@@ -43,12 +43,12 @@ if [ -z "$lan_dev" ] || { [ "$lan_dev" = 'br-lan' ] && ! network_has_device 'br-
         uci -q set network.lan.device="$ports"
     else
         network_has_device 'br-lan' || {
-            uci -q delete network.yaoflan
-            uci -q set network.yaoflan='device'
-            uci -q set network.yaoflan.name='br-lan'
-            uci -q set network.yaoflan.type='bridge'
+            uci -q delete network.opiblan
+            uci -q set network.opiblan='device'
+            uci -q set network.opiblan.name='br-lan'
+            uci -q set network.opiblan.type='bridge'
             for port in $ports; do
-                uci -q add_list network.yaoflan.ports="$port"
+                uci -q add_list network.opiblan.ports="$port"
             done
         }
         uci -q set network.lan.device='br-lan'
@@ -72,5 +72,5 @@ uci -q set dhcp.lan.leasetime='12h'
 uci -q commit network || exit 0
 uci -q commit dhcp || exit 0
 
-logger -t yaof-network "lan=10.1.1.2/24 device=$(uci -q get network.lan.device)" 2>/dev/null
+logger -t op-ib-network "lan=10.1.1.2/24 device=$(uci -q get network.lan.device)" 2>/dev/null
 exit 0
