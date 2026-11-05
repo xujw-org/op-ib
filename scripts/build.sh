@@ -205,6 +205,7 @@ fi
 BUILD_LOG="${WORK_DIR}/build.log"
 SKIPPED_PACKAGES=""
 MAX_SKIP_ROUNDS=5
+MAX_DOWNLOAD_RETRIES=2
 
 build_firmware() {
     local packages="$1"
@@ -223,8 +224,15 @@ missing_packages_from_log() {
     sed -nE 's/.*opkg_install_cmd: Cannot install package ([^ ]+)\.$/\1/p' "$log_file"
 }
 
+# Feed hiccups are worth a full rebuild; a broken package is not.
+download_failure_in_log() {
+    local log_file="$1"
+    grep -qE 'wget: exited with error|unexpected end of file|opkg_download: Failed to download|wget returned [0-9]+|Connection (timed out|reset by peer)|HTTP/1\.[01] (429|5[0-9][0-9])' "$log_file"
+}
+
 log "Assembling firmware for ${PROFILE} (${VERSION})..."
 skip_round=0
+download_retry=0
 while :; do
     if build_firmware "$PACKAGES"; then
         break
@@ -242,6 +250,12 @@ while :; do
     done
 
     if [ -z "$skipped" ]; then
+        if [ "$download_retry" -lt "$MAX_DOWNLOAD_RETRIES" ] && download_failure_in_log "$BUILD_LOG"; then
+            download_retry=$((download_retry + 1))
+            log "WARNING: transient download failure, retrying build (${download_retry}/${MAX_DOWNLOAD_RETRIES})"
+            sleep 15
+            continue
+        fi
         die "Firmware build failed (no unavailable package detected). See ${BUILD_LOG}"
     fi
 
