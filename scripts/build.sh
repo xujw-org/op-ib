@@ -225,6 +225,20 @@ missing_packages_from_log() {
     sed -nE 's/.*opkg_install_cmd: Cannot install package ([^ ]+)\.$/\1/p' "$log_file"
 }
 
+# apk (OpenWrt 25.x) refuses packages whose "kernel=" dependency was built for a
+# different kernel ABI. The third-party feed is built against the latest OpenWrt
+# release, so its kmods break whenever another upstream still ships an older
+# kernel (ImmortalWrt). Their "<pkg>-<version>[kernel=...]" tokens end up under
+# "breaks:".
+conflicting_packages_from_log() {
+    local log_file="$1"
+    sed -n '/ERROR: unable to select packages:/,$p' "$log_file" |
+        sed -n '/breaks:/,/satisfies:/p' |
+        tr -s ' \t' '\n\n' |
+        sed 's/\[.*//' |
+        grep -E '^kmod-.*-[0-9]' || true
+}
+
 # Feed hiccups are worth a full rebuild; a broken package is not.
 download_failure_in_log() {
     local log_file="$1"
@@ -240,15 +254,20 @@ while :; do
     fi
 
     missing="$(missing_packages_from_log "$BUILD_LOG" | sort -u)"
+    conflicting="$(conflicting_packages_from_log "$BUILD_LOG" | sort -u)"
     kept=""
-    skipped=""
+    missing_skipped=""
+    conflict_skipped=""
     for pkg in $PACKAGES; do
         if printf '%s\n' "$missing" | grep -qxF -- "$pkg"; then
-            skipped="${skipped}${skipped:+ }${pkg}"
+            missing_skipped="${missing_skipped}${missing_skipped:+ }${pkg}"
+        elif printf '%s\n' "$conflicting" | grep -qE "^${pkg}-[0-9]"; then
+            conflict_skipped="${conflict_skipped}${conflict_skipped:+ }${pkg}"
         else
             kept="${kept}${kept:+ }${pkg}"
         fi
     done
+    skipped="${missing_skipped}${missing_skipped:+${conflict_skipped:+ }}${conflict_skipped}"
 
     if [ -z "$skipped" ]; then
         if [ "$download_retry" -lt "$MAX_DOWNLOAD_RETRIES" ] && download_failure_in_log "$BUILD_LOG"; then
@@ -265,7 +284,8 @@ while :; do
         die "Too many unavailable packages; last skipped: ${skipped}. See ${BUILD_LOG}"
     fi
 
-    log "WARNING: Package(s) not available in repositories, skipping: ${skipped}"
+    [ -z "$missing_skipped" ] || log "WARNING: Package(s) not available in repositories, skipping: ${missing_skipped}"
+    [ -z "$conflict_skipped" ] || log "WARNING: Package(s) built for a different kernel ABI, skipping: ${conflict_skipped}"
     SKIPPED_PACKAGES="${SKIPPED_PACKAGES}${SKIPPED_PACKAGES:+ }${skipped}"
     PACKAGES="$kept"
 done

@@ -57,7 +57,7 @@ istoreos-x86-64-snapshot-2026-11-04-squashfs-combined-efi.img.gz
 - ImmortalWrt：06:00
 - iStoreOS：10:00
 
-每次构建从对应上游源解析当时可用的包版本，不锁定插件版本。
+每次构建从对应上游源解析当时可用的包版本，不锁定插件版本。第三方源的内核模块按最新 OpenWrt 内核 ABI 编译，若某上游内核较旧（如 ImmortalWrt），这些模块无法安装，构建会记录 `WARNING: ... different kernel ABI` 并跳过它们，固件仍会产出。
 
 ## 本地构建
 
