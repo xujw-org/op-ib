@@ -232,11 +232,16 @@ missing_packages_from_log() {
 # "breaks:".
 conflicting_packages_from_log() {
     local log_file="$1"
+    local kernel_abi
+    kernel_abi=$(sed -n '/ERROR: unable to select packages:/,$p' "$log_file" |
+        sed -n 's/^.*\[kernel=\([0-9][0-9.]*\)[~].*$/\1/p' | head -n 1)
+    [ -n "$kernel_abi" ] || return 0
     sed -n '/ERROR: unable to select packages:/,$p' "$log_file" |
         sed -n '/breaks:/,/satisfies:/p' |
         tr -s ' \t' '\n\n' |
         sed 's/\[.*//' |
-        grep -E '^kmod-.*-[0-9]' || true
+        grep -E '^kmod-.*-[0-9]' |
+        sed "s/-${kernel_abi}.*//" | sort -u
 }
 
 # Feed hiccups are worth a full rebuild; a broken package is not.
@@ -260,12 +265,26 @@ while :; do
     conflict_skipped=""
     for pkg in $PACKAGES; do
         if printf '%s\n' "$missing" | grep -qxF -- "$pkg"; then
-            missing_skipped="${missing_skipped}${missing_skipped:+ }${pkg}"
-        elif printf '%s\n' "$conflicting" | grep -qE "^${pkg}-[0-9]"; then
-            conflict_skipped="${conflict_skipped}${conflict_skipped:+ }${pkg}"
+            printf '%s\n' "$missing_skipped" | grep -qxF -- "$pkg" ||
+                missing_skipped="${missing_skipped}${missing_skipped:+ }${pkg}"
+        elif printf '%s\n' "$conflicting" | grep -qxF -- "$pkg"; then
+            printf '%s\n' "$conflict_skipped" | grep -qxF -- "$pkg" ||
+                conflict_skipped="${conflict_skipped}${conflict_skipped:+ }${pkg}"
         else
             kept="${kept}${kept:+ }${pkg}"
         fi
+    done
+
+    # Target profiles add kernel modules of their own (x86 pulls kmod-r8125 and
+    # kmod-r8168), so exclude every conflicting name instead of only the ones
+    # requested above.
+    for pkg in $conflicting; do
+        case " $kept " in
+            *" -${pkg} "*) ;;
+            *) kept="${kept}${kept:+ }-${pkg}" ;;
+        esac
+        printf '%s\n' "$conflict_skipped" | grep -qxF -- "$pkg" ||
+            conflict_skipped="${conflict_skipped}${conflict_skipped:+ }${pkg}"
     done
     skipped="${missing_skipped}${missing_skipped:+${conflict_skipped:+ }}${conflict_skipped}"
 
