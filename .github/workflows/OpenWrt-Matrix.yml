@@ -143,8 +143,7 @@ jobs:
           sudo apt-get install -y -qq --no-install-recommends \
             build-essential zstd curl wget jq file rsync \
             libncurses5-dev zlib1g-dev gawk git gettext libssl-dev xsltproc \
-            qemu-utils genisoimage
-          sudo ln -sf /usr/bin/genisoimage /usr/local/bin/mkisofs
+            qemu-utils
 
       - name: Assemble Firmware via ImageBuilder
         shell: bash
@@ -164,7 +163,6 @@ jobs:
           name: ${{ matrix.upstream }}-${{ matrix.name }}-${{ needs.setup.outputs.version }}
           path: |
             artifact/*.img.gz
-            artifact/*.iso
           if-no-files-found: error
           retention-days: 7
 
@@ -180,7 +178,6 @@ jobs:
 
             ### 产物
             - `*combined-efi.img.gz`：UEFI 启动镜像（squashfs / ext4 视上游而定）
-            - `*image.iso` / `*image-efi.iso`：BIOS / UEFI 安装镜像
 
             ### 默认配置
             - 管理地址：http://10.1.1.2
@@ -197,4 +194,4 @@ jobs:
           allowUpdates: true
           replacesArtifacts: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          artifacts: "artifact/*.img.gz,artifact/*.iso"
+          artifacts: "artifact/*.img.gz"

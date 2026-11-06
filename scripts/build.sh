@@ -157,11 +157,12 @@ if [ "$UPSTREAM" = "immortalwrt" ]; then
     sed -i -E 's/^(CONFIG_(QCOW2|VDI|VMDK|VHDX)_IMAGES)=y/# \1 is not set/' "${IB_DIR}/.config"
 fi
 
-# Build ISO images for every upstream.
-if grep -q '^# CONFIG_ISO_IMAGES is not set' "${IB_DIR}/.config"; then
-    sed -i 's/^# CONFIG_ISO_IMAGES is not set/CONFIG_ISO_IMAGES=y/' "${IB_DIR}/.config"
-elif ! grep -q '^CONFIG_ISO_IMAGES=y' "${IB_DIR}/.config"; then
-    printf 'CONFIG_ISO_IMAGES=y\n' >> "${IB_DIR}/.config"
+# ISO images are live-only: rebooting discards every configuration change, so
+# they are unsuitable for production. Disable them for every upstream.
+if grep -q '^CONFIG_ISO_IMAGES=y' "${IB_DIR}/.config"; then
+    sed -i 's/^CONFIG_ISO_IMAGES=y/# CONFIG_ISO_IMAGES is not set/' "${IB_DIR}/.config"
+elif ! grep -q '^# CONFIG_ISO_IMAGES is not set' "${IB_DIR}/.config"; then
+    printf '# CONFIG_ISO_IMAGES is not set\n' >> "${IB_DIR}/.config"
 fi
 
 OVERLAY_DIR="${WORK_DIR}/overlay"
@@ -284,7 +285,7 @@ if [ "$TARGET" = "x86" ]; then
     MATCH_PATTERN="*combined-efi.img.gz"
 fi
 
-find "$IB_BIN_DIR" -type f \( -name "$MATCH_PATTERN" -o -name '*.iso' \) | while read -r img; do
+find "$IB_BIN_DIR" -type f -name "$MATCH_PATTERN" | while read -r img; do
     fname=$(basename "$img")
     clean_suffix=$(echo "$fname" | sed -E "s/^${UPSTREAM}-(.*-)?${TARGET}-${SUBTARGET}-${PROFILE}-//")
     out_name="${UPSTREAM}-${PLATFORM_LABEL}-${VERSION}-${DATE_STR}-${clean_suffix}"

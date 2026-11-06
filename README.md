@@ -15,7 +15,7 @@
 - **插件**：HomeProxy、Nikki、Honk / dae（eBPF 透明代理）、FlowCone（eBPF FullCone NAT）、WireGuard、ZeroTier、SQM（CAKE / FQ_Codel）、NATMap-T、Bandix、AP-Modem、ARP 绑定、AirConnect、DDNS、UPnP、3cat
 - **底层优化**：BBR 拥塞控制；网卡上线时自动拉满 RX/TX Ring Buffer；zram-swap
 - **Full-Cone NAT**：FlowCone 提供 UDP Full-Cone；ImmortalWrt 额外启用 firewall4 fullcone（非 UDP/TCP），两者按协议分工
-- **固件格式**：同时产出 `img.gz`（sysupgrade / combined-efi）与 `iso`（`image.iso`、`image-efi.iso`）
+- **固件格式**：仅产出 `img.gz`（sysupgrade / combined-efi）。ISO 为 live 模式、重启即丢失全部配置，不适合生产使用，已取消构建
 - **X86 驱动**：Intel、Realtek 2.5G、Mellanox 10G/25G、VirtIO / VMXNet3 及 Intel 核显（i915 DRM）
 - **NanoPi**：支持 R2S / R2C / R3S / R4S，适配 PWM 温控风扇驱动
 - USB 网络共享相关包默认在 `profiles/packages.common` 中注释，需要时自行取消注释
@@ -35,14 +35,10 @@
 ```text
 openwrt-x86-64-25.12.6-2026-11-04-squashfs-combined-efi.img.gz
 openwrt-x86-64-25.12.6-2026-11-04-ext4-combined-efi.img.gz
-openwrt-x86-64-25.12.6-2026-11-04-image.iso
-openwrt-x86-64-25.12.6-2026-11-04-image-efi.iso
 
 immortalwrt-x86-64-25.12.2-2026-11-04-squashfs-combined-efi.img.gz
-immortalwrt-x86-64-25.12.2-2026-11-04-image-efi.iso
 
 istoreos-x86-64-snapshot-2026-11-04-squashfs-combined-efi.img.gz
-istoreos-x86-64-snapshot-2026-11-04-image-efi.iso
 ```
 
 ## 构建入口
@@ -65,7 +61,7 @@ istoreos-x86-64-snapshot-2026-11-04-image-efi.iso
 
 ## 本地构建
 
-需要 Linux（或 WSL / 容器）+ bash，依赖 `curl tar zstd make git sed awk findutils`；构建 ISO 还需 `genisoimage`（提供 `mkisofs`）。
+需要 Linux（或 WSL / 容器）+ bash，依赖 `curl tar zstd make git sed awk findutils`。
 
 ```bash
 # OpenWrt
